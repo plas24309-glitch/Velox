@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeloxEarn</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: #0d1117; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        .container { background: #161b22; width: 340px; padding: 25px; border-radius: 12px; border: 1px solid #30363d; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: white; outline: none; }
+        .btn { width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #income-page, #withdraw-page { display: none; width: 100%; height: 100vh; position: fixed; top: 0; left: 0; background: #0d1117; padding-top: 70px; text-align: center; overflow-y: auto; }
+        .top-header { width: 100%; height: 60px; background: #161b22; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; position: fixed; top: 0; border-bottom: 1px solid #30363d; z-index: 10; }
+        .notice-box { background: #1c2128; padding: 15px; border-left: 4px solid #238636; margin: 15px; font-size: 13px; border-radius: 4px; text-align: left; }
+        .task-card, .withdraw-card { background: #161b22; padding: 25px; border: 1px solid #30363d; margin: 15px; border-radius: 10px; }
+        
+        /* Floating WhatsApp Icon */
+        #wa-float {
+            position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px;
+            background: #25D366; border-radius: 50%; display: flex; justify-content: center;
+            align-items: center; cursor: move; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            touch-action: none;
+        }
+        #wa-float img { width: 30px; height: 30px; pointer-events: none; }
+
+        #ad-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <div id="wa-float" onmousedown="dragStart(event)" ontouchstart="dragStart(event)">
+        <a href="https://wa.me/8801312048034" target="_blank">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA">
+        </a>
+    </div>
+
+    <div class="container" id="auth-section">
+        <div id="login-form">
+            <h2 style="text-align:center; margin-bottom:20px;">VeloxEarn</h2>
+            <input type="email" id="le" placeholder="Email">
+            <input type="password" id="lp" placeholder="Password">
+            <button class="btn" onclick="login()">Login</button>
+            <p style="text-align:center; margin-top:15px; font-size:12px; color:#58a6ff;" onclick="toggle()">Create New Account</p>
+        </div>
+        <div id="reg-form" style="display:none;">
+            <h2 style="text-align:center; margin-bottom:20px;">Register</h2>
+            <input type="email" id="re" placeholder="Email">
+            <input type="password" id="rp" placeholder="Password">
+            <input type="password" id="rcp" placeholder="Confirm Password">
+            <button class="btn" onclick="register()">Sign Up</button>
+            <p style="text-align:center; margin-top:15px; font-size:12px; color:#58a6ff;" onclick="toggle()">Back to Login</p>
+        </div>
+    </div>
+
+    <div id="income-page">
+        <div class="top-header">
+            <span id="um" style="font-size:10px; color:#58a6ff;">User</span>
+            <span style="color:#2ecc71; font-weight:bold;">💎 <span id="bal">0</span></span>
+        </div>
+        <div class="notice-box"><b>📢 Notice:</b> <span id="app-n">Loading...</span></div>
+        <div class="task-card">
+            <p>Reward: <span id="r-text">0</span> Diamond</p>
+            <button class="btn" id="wb" onclick="startTask()" style="margin:20px 0; background:#1f6feb;">WATCH AD</button>
+            <p>Daily Task: <span id="c">0</span> / <span id="lt">0</span></p>
+            <div id="lock" style="color:red; display:none; margin-top:10px; font-weight:bold;">Wait: <span id="tm"></span></div>
+        </div>
+        <div style="margin: 20px 15px;">
+            <button class="btn" onclick="showWP(true)" style="background:#8957e5; margin-bottom:15px;">Withdraw Diamond</button>
+            <br>
+            <span onclick="logout()" style="color:#f85149; cursor:pointer; font-size:13px; font-weight:bold;">[ Logout ]</span>
+        </div>
+    </div>
+
+    <div id="withdraw-page">
+        <div class="top-header">
+            <span onclick="showWP(false)" style="color:#58a6ff; cursor:pointer;">⬅ Back</span>
+            <span style="color:#2ecc71; font-weight:bold;">💎 <span id="bal2">0</span></span>
+        </div>
+        <div class="withdraw-card">
+            <h3>Withdraw Diamonds</h3>
+            <p style="font-size:12px; color:#8b949e; margin-bottom:20px;">Min: <span id="mw-text">0</span> 💎</p>
+            
+            <select id="w-method">
+                <option value="">Select Method</option>
+                <option value="Bkash">Bkash</option>
+                <option value="Nagad">Nagad</option>
+                <option value="Recharge">Mobile Recharge</option>
+            </select>
+            <input type="number" id="w-amount" placeholder="Amount (Diamond)">
+            <input type="text" id="w-number" placeholder="Account Number">
+            
+            <button class="btn" onclick="submitW()">Request Withdraw</button>
+        </div>
+    </div>
+
+    <div id="ad-overlay">
+        <div style="width:90%; height:75%; background:#000;"><iframe id="af" style="width:100%; height:100%; border:none;"></iframe></div>
+        <p id="timer" style="color:#58a6ff; margin-top:20px; font-weight:bold; font-size:18px;">Please Wait...</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, update, onValue, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyA6nMGYc8PGzBFy7ZCLW4R6c9LzKrgc6pA", authDomain: "veloxearn-834a6.firebaseapp.com", databaseURL: "https://veloxearn-834a6-default-rtdb.firebaseio.com", projectId: "veloxearn-834a6", storageBucket: "veloxearn-834a6.firebasestorage.app", messagingSenderId: "527714056151", appId: "1:527714056151:web:9d3ce91b26b814bbb83d92" };
+        const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getDatabase(app);
+        let uData = {}, sets = {};
+
+        onValue(ref(db, 'appSettings'), s => { 
+            if(s.exists()){ 
+                sets = s.val(); 
+                document.getElementById('r-text').innerText = sets.adReward;
+                document.getElementById('lt').innerText = sets.adLimit;
+                document.getElementById('app-n').innerText = sets.notice;
+                document.getElementById('mw-text').innerText = sets.minWithdraw;
+            }
+        });
+
+        onAuthStateChanged(auth, u => {
+            if(u){
+                document.getElementById('um').innerText = u.email;
+                onValue(ref(db, 'users/'+u.uid), s => {
+                    uData = s.val() || {balance:0, ads:0, lastAdTime:0};
+                    document.getElementById('bal').innerText = uData.balance;
+                    document.getElementById('bal2').innerText = uData.balance;
+                    document.getElementById('c').innerText = uData.ads;
+                    checkL();
+                });
+                document.getElementById('auth-section').style.display='none'; document.getElementById('income-page').style.display='block';
+            } else {
+                document.getElementById('auth-section').style.display='block'; document.getElementById('income-page').style.display='none';
+            }
+        });
+
+        window.showWP = (show) => {
+            document.getElementById('income-page').style.display = show ? 'none' : 'block';
+            document.getElementById('withdraw-page').style.display = show ? 'block' : 'none';
+        };
+
+        window.submitW = () => {
+            const method = document.getElementById('w-method').value;
+            const amount = parseInt(document.getElementById('w-amount').value);
+            const number = document.getElementById('w-number').value;
+            if(!method) return alert("পেমেন্ট মেথড সিলেক্ট করুন!");
+            if(!amount || !number) return alert("তথ্য পূরণ করুন!");
+            if(amount < sets.minWithdraw) return alert("মিনিমাম লিমিট অনুযায়ী উইথড্র দিতে হবে !");
+            if(amount > uData.balance) return alert("ব্যালেন্স নেই!");
+
+            push(ref(db, 'withdraws'), { email: auth.currentUser.email, method, amount, num: number, time: Date.now() }).then(() => {
+                update(ref(db, 'users/'+auth.currentUser.uid), { balance: uData.balance - amount });
+                alert("Withdraw Success ২৪ ঘন্টার মধ্যে পেমেন্ট পেয়ে যাবেন ✅!");
+                showWP(false);
+            });
+        };
+
+        function checkL(){
+            const diff = Date.now() - (uData.lastAdTime || 0);
+            if(uData.ads >= sets.adLimit && diff < 600000){
+                document.getElementById('wb').disabled = true; document.getElementById('lock').style.display='block';
+                const rem = 600000 - diff;
+                document.getElementById('tm').innerText = `${Math.floor(rem/60000)}m ${Math.floor((rem%60000)/1000)}s`;
+                setTimeout(checkL, 1000);
+            } else {
+                if(uData.ads >= sets.adLimit) update(ref(db, 'users/'+auth.currentUser.uid), {ads:0, lastAdTime:0});
+                document.getElementById('wb').disabled = false; document.getElementById('lock').style.display='none';
+            }
+        }
+
+        window.startTask = () => {
+            document.getElementById('ad-overlay').style.display='flex';
+            document.getElementById('af').src = sets.adLink;
+            let s = sets.adDuration || 5;
+            const t = setInterval(() => {
+                document.getElementById('timer').innerText = `Wait ${s--}s...`;
+                if(s < 0){
+                    clearInterval(t);
+                    const reward = parseInt(sets.adReward);
+                    update(ref(db, 'users/'+auth.currentUser.uid), {
+                        balance: (uData.balance||0) + reward,
+                        ads: (uData.ads||0)+1,
+                        lastAdTime: (uData.ads+1 >= sets.adLimit) ? Date.now() : (uData.lastAdTime || 0)
+                    }).then(() => { 
+                        document.getElementById('ad-overlay').style.display='none'; document.getElementById('af').src=""; 
+                        alert(`💎 ${reward} Added!`);
+                    });
+                }
+            }, 1000);
+        };
+
+        window.logout = () => signOut(auth);
+        window.login = () => signInWithEmailAndPassword(auth, document.getElementById('le').value, document.getElementById('lp').value);
+        window.register = () => {
+            if(document.getElementById('rp').value !== document.getElementById('rcp').value) return alert("Mismatch!");
+            createUserWithEmailAndPassword(auth, document.getElementById('re').value, document.getElementById('rp').value).then(c => set(ref(db, 'users/'+c.user.uid), {email: document.getElementById('re').value, balance:0, ads:0}));
+        };
+        window.toggle = () => { document.getElementById('login-form').style.display = document.getElementById('login-form').style.display==='none'?'block':'none'; document.getElementById('reg-form').style.display = document.getElementById('reg-form').style.display==='none'?'block':'none'; };
+
+        // Draggable WhatsApp Icon Logic
+        let offset = [0,0], isDown = false, el = document.getElementById('wa-float');
+        window.dragStart = (e) => {
+            isDown = true;
+            let event = e.type === 'touchstart' ? e.touches[0] : e;
+            offset = [el.offsetLeft - event.clientX, el.offsetTop - event.clientY];
+        };
+        document.addEventListener('mousemove', (e) => {
+            if(!isDown) return;
+            el.style.left = (e.clientX + offset[0]) + 'px';
+            el.style.top  = (e.clientY + offset[1]) + 'px';
+            el.style.right = 'auto'; el.style.bottom = 'auto';
+        });
+        document.addEventListener('touchmove', (e) => {
+            if(!isDown) return;
+            let touch = e.touches[0];
+            el.style.left = (touch.clientX + offset[0]) + 'px';
+            el.style.top  = (touch.clientY + offset[1]) + 'px';
+            el.style.right = 'auto'; el.style.bottom = 'auto';
+        });
+        document.addEventListener('mouseup', () => isDown = false);
+        document.addEventListener('touchend', () => isDown = false);
+    </script>
+</body>
+</html>
